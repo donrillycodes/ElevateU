@@ -1,0 +1,43 @@
+src/
+  models/
+    User.js
+    Chat.js
+    Message.js
+  views/
+    auth/
+      LoginScreen.js
+      SignupScreen.js
+      CompleteProfileScreen.js
+    mentee/
+      HomeScreen.js          # Mentee home (find mentors)
+      ProfileDetailsScreen.js # View mentor profile
+    mentor/
+      MentorHomeScreen.js    # Mentor home (mentee requests)
+    shared/
+      ChatListScreen.js
+      ChatRoomScreen.js
+      UserProfileScreen.js   # User's own profile (was UserProfileFlatListScreen.js)
+      EditProfileScreen.js
+  controllers/
+    AuthController.js        # Handles sign-in/out, profile complete
+    ProfileController.js     # Edit/save profile, upload avatar
+    ChatController.js        # Create/send/subscribe chats
+    MatchController.js       # Optional: Mentor matching/requests
+  services/
+    firebase.js              # Init and exports (auth, db, storage)
+    authService.js           # Sign in/out, create user
+    userService.js           # CRUD user, avatar upload, role checks
+    chatService.js           # List chats, subscribe, send message
+    requestService.js        # Mentor requests (for MentorHomeScreen)
+  components/
+    MentorCard.js            # Reusable card for mentors/requests
+    MessageBubble.js         # For ChatRoom
+    // Add more as needed (e.g., Section.js for profiles)
+  navigation/
+    AppNavigator.js          # Root (auth vs main)
+    MenteeTabs.js            # Bottom tabs for mentees
+    MentorTabs.js            # Bottom tabs for mentors
+  lib/
+    validators.js            # Email, required, etc.
+    format.js                # Time, name, etc.
+App.js                      # Entry point
