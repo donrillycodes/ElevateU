@@ -10,7 +10,6 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { handleSignup } from '../../controllers/AuthController';
 import { validateEmail, validateRequired } from '../../lib/validators';
 
 const CARD_BG = '#F6F7F9';
@@ -20,100 +19,100 @@ const TEXT_DARK = '#111827';
 const TEXT_MUTED = '#6B7280';
 
 export default function SignupScreen({ navigation }) {
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
 
-    const handleNext = async () => {
-        setError('');
-        if (!validateRequired(name)) {
-        setError('Name is required.');
-        return;
-        }
-        if (!validateEmail(email)) {
-        setError('Invalid email address.');
-        return;
-        }
-        if (!validateRequired(password)) {
-        setError('Password is required.');
-        return;
-        }
-        try {
-        await handleSignup(name, email, password, '', ''); // Role/field set in CompleteProfile
-        navigation.navigate('CompleteProfile');
-        } catch (err) {
-        setError(err.message || 'Signup failed.');
-        }
-    };
+  const handleNext = () => {
+    setError('');
+    if (!validateRequired(name)) {
+      setError('Name is required.');
+      return;
+    }
+    if (!validateEmail(email)) {
+      setError('Invalid email address.');
+      return;
+    }
+    if (!validateRequired(password)) {
+      setError('Password is required.');
+      return;
+    }
 
-    return (
-        <SafeAreaView style={styles.screen}>
-        <KeyboardAvoidingView
-            style={{ flex: 1 }}
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-            <View style={styles.centerWrap}>
-            <View style={styles.card}>
-                <Text style={styles.title}>Create Your Account</Text>
-                <Text style={styles.subtitle}>
-                Enter your details to get started with{' '}
-                <Text style={{ fontWeight: '700' }}>ElevateU</Text>
-                </Text>
+    navigation.navigate('CompleteProfile', {
+      name,
+      email,
+      password,
+    });
+  };
 
-                <Text style={styles.label}>Name</Text>
-                <TextInput
-                style={styles.input}
-                placeholder='John Doe'
-                placeholderTextColor='#9AA0A6'
-                value={name}
-                onChangeText={setName}
-                />
+  return (
+    <SafeAreaView style={styles.screen}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <View style={styles.centerWrap}>
+          <View style={styles.card}>
+            <Text style={styles.title}>Create Your Account</Text>
+            <Text style={styles.subtitle}>
+              Enter your details to get started with{' '}
+              <Text style={{ fontWeight: '700' }}>ElevateU</Text>
+            </Text>
 
-                <Text style={[styles.label, { marginTop: 12 }]}>Email</Text>
-                <TextInput
-                style={styles.input}
-                placeholder='name@example.com'
-                placeholderTextColor='#9AA0A6'
-                autoCapitalize='none'
-                keyboardType='email-address'
-                value={email}
-                onChangeText={setEmail}
-                />
+            <Text style={styles.label}>Name</Text>
+            <TextInput
+              style={styles.input}
+              placeholder='John Doe'
+              placeholderTextColor='#9AA0A6'
+              value={name}
+              onChangeText={setName}
+            />
 
-                <Text style={[styles.label, { marginTop: 12 }]}>Password</Text>
-                <TextInput
-                style={styles.input}
-                placeholder='••••••••'
-                placeholderTextColor='#9AA0A6'
-                secureTextEntry
-                value={password}
-                onChangeText={setPassword}
-                />
+            <Text style={[styles.label, { marginTop: 12 }]}>Email</Text>
+            <TextInput
+              style={styles.input}
+              placeholder='name@example.com'
+              placeholderTextColor='#9AA0A6'
+              autoCapitalize='none'
+              keyboardType='email-address'
+              value={email}
+              onChangeText={setEmail}
+            />
 
-                {error ? <Text style={styles.error}>{error}</Text> : null}
+            <Text style={[styles.label, { marginTop: 12 }]}>Password</Text>
+            <TextInput
+              style={styles.input}
+              placeholder='••••••••'
+              placeholderTextColor='#9AA0A6'
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+            />
 
-                <TouchableOpacity style={styles.primaryBtn} onPress={handleNext}>
-                <Text style={styles.primaryBtnText}>Next</Text>
-                <Ionicons
-                    name='arrow-forward'
-                    size={20}
-                    color='#fff'
-                    style={{ marginLeft: 8 }}
-                />
-                </TouchableOpacity>
+            {error ? <Text style={styles.error}>{error}</Text> : null}
 
-                <View style={styles.bottomRow}>
-                <Text style={styles.muted}>Already have an account? </Text>
-                <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                    <Text style={styles.link}>Login</Text>
-                </TouchableOpacity>
-                </View>
+            <TouchableOpacity style={styles.primaryBtn} onPress={handleNext}>
+              <Text style={styles.primaryBtnText}>Next</Text>
+              <Ionicons
+                name='arrow-forward'
+                size={20}
+                color='#fff'
+                style={{ marginLeft: 8 }}
+              />
+            </TouchableOpacity>
+
+            <View style={styles.bottomRow}>
+              <Text style={styles.muted}>Already have an account? </Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+                <Text style={styles.link}>Login</Text>
+              </TouchableOpacity>
             </View>
-            </View>
-        </KeyboardAvoidingView>
-        </SafeAreaView>
-    );
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
 }
 
 const styles = StyleSheet.create({

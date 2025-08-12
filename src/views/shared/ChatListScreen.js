@@ -1,6 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { SafeAreaView, View, Text, StyleSheet, TouchableOpacity, FlatList, } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  SafeAreaView,
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  FlatList,
+  Image,
+} from 'react-native';
 import { listenChats } from '../../controllers/ChatController';
 import { getUser } from '../../services/userService';
 import { auth } from '../../services/firebase';
@@ -13,36 +20,107 @@ const MUTED = '#6B7280';
 
 export default function ChatListScreen({ navigation }) {
   const [chats, setChats] = useState([]);
-  const [names, setNames] = useState({}); // Cache user names
+  const [profiles, setProfiles] = useState({}); // { [uid]: { name, avatarUrl } }
 
   useEffect(() => {
-    const unsubscribe = listenChats(auth.currentUser.uid, async (chatData) => {
-      const updatedChats = [];
-      const nameCache = { ...names };
-      for (const chat of chatData) {
-        const otherUid = chat.participants.find(uid => uid !== auth.currentUser.uid);
-        if (!nameCache[otherUid]) {
-          const user = await getUser(otherUid);
-          nameCache[otherUid] = user?.name || 'Unknown';
-        }
-        updatedChats.push({ ...chat, name: nameCache[otherUid] });
+    const uid = auth.currentUser?.uid;
+    if (!uid) return;
+
+    const unsubscribe = listenChats(uid, async (chatData) => {
+      const pendingProfiles = {};
+      const enriched = await Promise.all(
+        (chatData || []).map(async (chat) => {
+          const me = uid;
+          const peerId = chat.participants?.find((p) => p !== me);
+
+          // 1) Prefer participantsMeta from chat doc
+          const meta = chat.participantsMeta?.[peerId] || {};
+          let name = meta.displayName;
+          let avatarUrl = meta.avatarUrl;
+
+          // 2) Fallback to cached profile
+          if (!name) {
+            const cached = profiles[peerId];
+            if (cached) {
+              name = cached.name;
+              avatarUrl = cached.avatarUrl;
+            }
+          }
+
+          // 3) Final fallback to userService (fetch once)
+          if (!name) {
+            try {
+              const u = await getUser(peerId);
+              name = u?.displayName || u?.name || 'Unknown';
+              avatarUrl = u?.avatarUrl || '';
+              pendingProfiles[peerId] = { name, avatarUrl };
+            } catch {
+              name = 'Unknown';
+              avatarUrl = '';
+            }
+          }
+
+          // last message + time
+          const lastMessage = chat.lastMessage || '';
+          const updatedAtDate = chat.updatedAt?.toDate
+            ? chat.updatedAt.toDate()
+            : null;
+          const lastTimestamp = updatedAtDate
+            ? formatTime(updatedAtDate)
+            : '';
+
+          // unread (if your backend stores per-user counts)
+          const unread = (chat.unread && chat.unread[me]) || 0;
+
+          return {
+            id: chat.id,
+            peerId,
+            name,
+            avatarUrl,
+            lastMessage,
+            lastTimestamp,
+            unread,
+          };
+        })
+      );
+
+      // Merge any fresh profiles into cache
+      if (Object.keys(pendingProfiles).length) {
+        setProfiles((prev) => ({ ...prev, ...pendingProfiles }));
       }
-      setNames(nameCache);
-      setChats(updatedChats);
+      setChats(enriched);
     });
+
     return unsubscribe;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const renderItem = ({ item }) => (
     <TouchableOpacity
       style={styles.card}
       activeOpacity={0.8}
-      onPress={() => navigation.navigate('ChatRoom', { chatId: item.id, name: item.name })}
+      onPress={() =>
+        navigation.navigate('ChatRoom', {
+          chatId: item.id,
+          peerId: item.peerId,
+          name: item.name,
+        })
+      }
     >
-      <View style={[styles.avatar, { backgroundColor: '#D7F7D2' }]} />
+      {item.avatarUrl ? (
+        <Image source={{ uri: item.avatarUrl }} style={styles.avatarImg} />
+      ) : (
+        <View style={[styles.avatar, { backgroundColor: '#D7F7D2' }]} />
+      )}
       <View style={{ flex: 1 }}>
-        <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
-        <Text style={styles.last} numberOfLines={1}>{item.lastMessage}</Text>
+        <Text style={styles.name} numberOfLines={1}>
+          {item.name}
+        </Text>
+        {!!item.lastMessage && (
+          <Text style={styles.last} numberOfLines={1}>
+            {item.lastMessage}
+          </Text>
+        )}
       </View>
       <View style={styles.rightCol}>
         <Text style={styles.time}>{item.lastTimestamp}</Text>
@@ -66,10 +144,26 @@ export default function ChatListScreen({ navigation }) {
         renderItem={renderItem}
         contentContainerStyle={{ padding: 16, paddingBottom: 90 }}
         ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+        ListEmptyComponent={
+          <View style={{ paddingTop: 40, alignItems: 'center' }}>
+            <Text style={{ color: MUTED }}>No chats yet</Text>
+          </View>
+        }
         showsVerticalScrollIndicator={false}
       />
     </SafeAreaView>
   );
+}
+
+function formatTime(d) {
+  const now = new Date();
+  const sameDay =
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate();
+  return sameDay
+    ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : d.toLocaleDateString();
 }
 
 const styles = StyleSheet.create({
@@ -91,7 +185,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: '#fff',
   },
-    avatar: {
+  avatar: {
     width: 38,
     height: 38,
     borderRadius: 19,
@@ -105,6 +199,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
+    marginRight: 12,
   },
   name: { fontSize: 15, fontWeight: '800', color: TEXT },
   last: { fontSize: 13, color: MUTED, marginTop: 2 },
@@ -125,3 +220,5 @@ const styles = StyleSheet.create({
   },
   badgeText: { color: '#fff', fontSize: 12, fontWeight: '800' },
 });
+
+// chatlist screen

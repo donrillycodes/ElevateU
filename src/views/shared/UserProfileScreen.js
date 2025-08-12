@@ -6,6 +6,8 @@ import { auth } from '../../services/firebase';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { resetTo } from '../../services/navigationService';
 
+
+
 const PRIMARY = '#1677C8';
 const BORDER = '#98C0DF';
 const TEXT = '#0C223A';

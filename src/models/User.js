@@ -1,4 +1,3 @@
-// Simple data mapper (no classes in JS, but object schema)
 export const mapUser = (data) => ({
   uid: data.uid,
   name: data.name || '',

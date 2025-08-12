@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { SafeAreaView, View, Text, StyleSheet, TouchableOpacity, FlatList,Alert, Image, } from 'react-native';
+import { SafeAreaView, View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { subscribeToRequests, acceptRequest, declineRequest, } from '../../controllers/MatchController';
-import { initiateChat } from '../../controllers/ChatController';
+import { useNavigation } from '@react-navigation/native';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { subscribeToRequests, acceptRequest, declineRequest } from '../../controllers/MatchController';
 import { auth } from '../../services/firebase';
 
 const PRIMARY = '#1A73E8';
@@ -11,54 +12,115 @@ const TEXT = '#0C223A';
 const MUTED = '#6B7280';
 
 export default function MentorHomeScreen() {
+    const navigation = useNavigation();
     const [requests, setRequests] = useState([]);
-    const [statusMap, setStatusMap] = useState({});
+    const [statusMap, setStatusMap] = useState({}); // id -> 'processing' | 'accepted' | 'declined'
+    const [ready, setReady] = useState(false);      // auth ready flag
 
     useEffect(() => {
-        if (!auth.currentUser) {
-        Alert.alert('Error', 'User not authenticated.');
-        return;
+        let stopAuth = null;
+        let stopRequests = null;
+
+        stopAuth = onAuthStateChanged(auth, (u) => {
+        setReady(true);
+
+        // Clean any previous subscription if the user changed/logged out
+        if (stopRequests) {
+            stopRequests();
+            stopRequests = null;
         }
-        const unsubscribe = subscribeToRequests(auth.currentUser.uid, setRequests);
-        return unsubscribe;
+
+        if (!u) {
+            setRequests([]);
+            return; // don't try to read u.uid if null
+        }
+
+        // Subscribe only when we have a user
+        stopRequests = subscribeToRequests(u.uid, setRequests);
+        });
+
+        return () => {
+        if (stopAuth) stopAuth();
+        if (stopRequests) stopRequests();
+        };
     }, []);
 
     const handleLogout = async () => {
         try {
-            await auth.signOut();
-            resetTo('Login');
+        await signOut(auth);
+        // Your root navigator should switch to Auth/Login automatically
         } catch (err) {
-            console.error('Logout error:', err);
+        console.error('Logout error:', err);
+        Alert.alert('Logout error', err?.message ?? 'Failed to log out.');
         }
     };
 
-    const handleAccept = async (id, menteeId) => {
+    // Accept using the whole item so we can pass name/avatar to chat
+    const handleAccept = async (req) => {
+        const { id, menteeId, menteeName, menteeAvatarUrl } = req || {};
         try {
-            console.log('Current UID:', auth.currentUser.uid);
-            console.log('Request ID:', item.id);
-            console.log('Request mentorId:', item.mentorId);
+        const mentorId = auth.currentUser?.uid;
+        if (!mentorId) return Alert.alert('Error', 'User not authenticated.');
+        if (!menteeId) return Alert.alert('Error', 'Missing mentee id on this request.');
 
+        setStatusMap((prev) => ({ ...prev, [id]: 'processing' }));
 
-        await acceptRequest(id, auth.currentUser.uid, menteeId);
-        await initiateChat(auth.currentUser.uid, menteeId, 'You’ve been matched! Start chatting now.');
+        // Build participantsMeta so ChatList can render instantly
+        const participantsMeta = {
+            [mentorId]: {
+            displayName: auth.currentUser?.displayName || 'You',
+            avatarUrl: auth.currentUser?.photoURL || '', // use your stored avatar if different
+            },
+            [menteeId]: {
+            displayName: menteeName || 'Mentee',
+            avatarUrl: menteeAvatarUrl || '',
+            },
+        };
+
+        // acceptRequest now creates/reuses the chat and returns chatId
+        const chatId = await acceptRequest(id, mentorId, menteeId, participantsMeta);
+
         setStatusMap((prev) => ({ ...prev, [id]: 'accepted' }));
+
+        Alert.alert(
+            'Approved',
+            'Request approved. You can start chatting now.',
+            [
+            { text: 'Go to chat', onPress: () => navigation.navigate('ChatRoom', { chatId, peerId: menteeId }) },
+            { text: 'OK' },
+            ]
+        );
         } catch (err) {
         console.error('Accept error:', err);
-        Alert.alert('Error', 'Failed to accept request.');
+        Alert.alert('Error', err?.message ?? 'Failed to accept request.');
+        setStatusMap((prev) => {
+            const copy = { ...prev };
+            delete copy[req?.id];
+            return copy;
+        });
         }
     };
 
     const handleDecline = async (id) => {
         try {
+        setStatusMap((prev) => ({ ...prev, [id]: 'processing' }));
         await declineRequest(id);
         setStatusMap((prev) => ({ ...prev, [id]: 'declined' }));
         } catch (err) {
-        Alert.alert('Error', 'Failed to decline request.');
+        console.error('Decline error:', err);
+        Alert.alert('Error', err?.message ?? 'Failed to decline request.');
+        setStatusMap((prev) => {
+            const copy = { ...prev };
+            delete copy[id];
+            return copy;
+        });
         }
     };
 
     const renderItem = ({ item }) => {
         const status = statusMap[item.id];
+        const isProcessing = status === 'processing';
+        const displayName = (item.menteeName || item.menteeDisplayName || '').trim();
 
         return (
         <View style={styles.cardOuter}>
@@ -73,13 +135,10 @@ export default function MentorHomeScreen() {
                 style={styles.avatar}
                 />
                 <View style={{ flex: 1 }}>
-                <Text style={styles.name}>{item.menteeName || 'Unknown'}</Text>
+                <Text style={styles.name}>{displayName || 'Loading…'}</Text>
                 <Text style={styles.when}>
                     {item.timestamp?.toDate
-                    ? item.timestamp.toDate().toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        })
+                    ? item.timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                     : 'Recent'}
                 </Text>
                 </View>
@@ -94,16 +153,22 @@ export default function MentorHomeScreen() {
             ) : (
                 <View style={styles.actionRow}>
                 <TouchableOpacity
-                    style={styles.acceptBtn}
-                    onPress={() => handleAccept(item.id, item.menteeId)}
+                    style={[styles.acceptBtn, isProcessing && styles.btnDisabled]}
+                    disabled={isProcessing}
+                    onPress={() => handleAccept(item)}
                 >
-                    <Text style={styles.acceptText}>Accept Request</Text>
+                    <Text style={styles.acceptText}>
+                    {isProcessing ? 'Please wait…' : 'Accept Request'}
+                    </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={styles.declineBtn}
+                    style={[styles.declineBtn, isProcessing && styles.btnDisabled]}
+                    disabled={isProcessing}
                     onPress={() => handleDecline(item.id)}
                 >
-                    <Text style={styles.declineText}>Decline</Text>
+                    <Text style={styles.declineText}>
+                    {isProcessing ? 'Please wait…' : 'Decline'}
+                    </Text>
                 </TouchableOpacity>
                 </View>
             )}
@@ -117,19 +182,25 @@ export default function MentorHomeScreen() {
         <View style={styles.header}>
             <Text style={styles.headerTitle}>Home</Text>
             <TouchableOpacity onPress={handleLogout} style={{ position: 'absolute', right: 16 }}>
-                <Ionicons name="log-out-outline" size={22} color={TEXT} />
+            <Ionicons name="log-out-outline" size={22} color={TEXT} />
             </TouchableOpacity>
         </View>
+
         <FlatList
             data={requests}
-            keyExtractor={(i) => i.id}
+            keyExtractor={(i) => (i.id ? String(i.id) : Math.random().toString(36))}
             renderItem={renderItem}
             contentContainerStyle={{ padding: 16, paddingBottom: 90 }}
             ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
             ListHeaderComponent={
-            requests.length > 0 ? (
-                <Text style={styles.pageTitle}>Mentee Requests</Text>
-            ) : null
+            requests.length > 0 ? <Text style={styles.pageTitle}>Mentee Requests</Text> : null
+            }
+            ListEmptyComponent={
+            <View style={{ padding: 24, alignItems: 'center' }}>
+                <Text style={{ color: MUTED }}>
+                {ready ? 'No mentee requests yet.' : 'Loading…'}
+                </Text>
+            </View>
             }
         />
         </SafeAreaView>
@@ -212,4 +283,8 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         color: MUTED,
     },
+    btnDisabled: { opacity: 0.6 },
 });
+
+// mentor home screen
+

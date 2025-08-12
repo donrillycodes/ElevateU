@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { SafeAreaView, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DropDownPicker from 'react-native-dropdown-picker';
-import { completeProfile } from '../../controllers/AuthController';
-import { auth } from '../../services/firebase';
+import { handleSignup } from '../../controllers/AuthController';
 import { validateRequired } from '../../lib/validators';
 
 const CARD_BG = '#F6F7F9';
@@ -12,7 +11,8 @@ const PRIMARY = '#1A73E8';
 const TEXT_DARK = '#111827';
 const TEXT_MUTED = '#6B7280';
 
-export default function CompleteProfileScreen({ navigation }) {
+export default function CompleteProfileScreen({ navigation, route }) {
+    const { name, email, password } = route.params;
     const [role, setRole] = useState('mentee');
     const [field, setField] = useState(null);
     const [error, setError] = useState('');
@@ -32,14 +32,10 @@ export default function CompleteProfileScreen({ navigation }) {
         setError('Please select a field.');
         return;
         }
-        if (!auth.currentUser) {
-        setError('User not authenticated.');
-        return;
-        }
+
         try {
-        await completeProfile(auth.currentUser.uid, role, field);
+        await handleSignup(name, email, password, role, field);
         navigation.navigate('Login');
-        // Navigation handled in AppNavigator
         } catch (err) {
         setError(err.message || 'Failed to complete profile.');
         }
@@ -61,20 +57,14 @@ export default function CompleteProfileScreen({ navigation }) {
             {error ? <Text style={styles.error}>{error}</Text> : null}
 
             <Text style={[styles.label, { marginTop: 14 }]}>Select Your Role</Text>
-            <TouchableOpacity
-                style={styles.radioRow}
-                onPress={() => setRole('mentor')}
-            >
+            <TouchableOpacity style={styles.radioRow} onPress={() => setRole('mentor')}>
                 <View style={[styles.radioOuter, role === 'mentor' && styles.radioOuterActive]}>
                 {role === 'mentor' ? <View style={styles.radioInner} /> : null}
                 </View>
                 <Text style={styles.radioText}>Mentor</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-                style={styles.radioRow}
-                onPress={() => setRole('mentee')}
-            >
+            <TouchableOpacity style={styles.radioRow} onPress={() => setRole('mentee')}>
                 <View style={[styles.radioOuter, role === 'mentee' && styles.radioOuterActive]}>
                 {role === 'mentee' ? <View style={styles.radioInner} /> : null}
                 </View>
@@ -98,21 +88,20 @@ export default function CompleteProfileScreen({ navigation }) {
 
             <View style={styles.buttonRow}>
                 <TouchableOpacity
-                    style={[styles.secondaryBtn]}
-                    onPress={() => navigation.goBack()}
+                style={styles.secondaryBtn}
+                onPress={() => navigation.goBack()}
                 >
-                    <Text style={styles.secondaryBtnText}>Back</Text>
+                <Text style={styles.secondaryBtnText}>Back</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                    style={[styles.primaryBtn, { opacity: field ? 1 : 0.6 }]}
-                    onPress={handleSubmit}
-                    disabled={!field}
+                style={[styles.primaryBtn, { opacity: field ? 1 : 0.6 }]}
+                onPress={handleSubmit}
+                disabled={!field}
                 >
-                    <Text style={styles.primaryBtnText}>Complete Sign-Up</Text>
+                <Text style={styles.primaryBtnText}>Complete Sign-Up</Text>
                 </TouchableOpacity>
             </View>
-
 
             <View style={styles.bottomRow}>
                 <Text style={styles.muted}>Already have an account? </Text>
@@ -180,32 +169,41 @@ const styles = StyleSheet.create({
         zIndex: 1000,
     },
     primaryBtn: {
-        marginTop: 18,
+        flex: 1,
         height: 46,
         backgroundColor: PRIMARY,
         borderRadius: 8,
         alignItems: 'center',
         justifyContent: 'center',
+        paddingHorizontal: 16,
     },
     primaryBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
     buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 18,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginTop: 18,
+        columnGap: 12,
     },
     secondaryBtn: {
-    height: 46,
-    paddingHorizontal: 16,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+        flex: 1,
+        height: 46,
+        paddingHorizontal: 16,
+        backgroundColor: '#E5E7EB',
+        borderRadius: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     secondaryBtnText: {
-    color: TEXT_DARK,
-    fontWeight: '600',
-    fontSize: 16,
+        color: TEXT_DARK,
+        fontWeight: '600',
+        fontSize: 16,
     },
     muted: { color: TEXT_MUTED },
     link: { color: PRIMARY, fontWeight: '700' },
+    bottomRow: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        marginTop: 20,
+    },
 });

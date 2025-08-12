@@ -7,17 +7,16 @@ import {
   TouchableOpacity,
   FlatList,
   StyleSheet,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '../../services/firebase';
+import { db, auth } from '../../services/firebase';
 import { sendMentorRequest } from '../../controllers/MatchController';
 import MentorCard from '../../components/MentorCard';
-import { auth } from '../../services/firebase';
 
 const PRIMARY = '#1A73E8';
 const BORDER = '#E5E7EB';
-const CARD_BG = '#FFFFFF';
 const PAGE_BG = '#FFFFFF';
 const MUTED = '#6B7280';
 const TEXT = '#0C223A';
@@ -36,8 +35,7 @@ export default function HomeScreen({ navigation }) {
   const [mentors, setMentors] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCat, setActiveCat] = useState('all');
-  const [requestedMentors, setRequestedMentors] = useState([]);
-
+  const [requestedMentors, setRequestedMentors] = useState({});
 
   useEffect(() => {
     const fetchMentors = async () => {
@@ -57,19 +55,34 @@ export default function HomeScreen({ navigation }) {
 
   const handleLogout = async () => {
     try {
-        await auth.signOut();
-        resetTo('Login');
+      await auth.signOut();
+      resetTo('Login');
     } catch (err) {
-        console.error('Logout error:', err);
+      console.error('Logout error:', err);
     }
   };
 
   const filteredMentors = mentors.filter(m =>
-    m.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    m.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    m.bio?.toLowerCase().includes(searchQuery.toLowerCase())
+    (m.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (m.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (m.bio || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handleRequestMentor = async (mentorId, mentorName) => {
+    try {
+      await sendMentorRequest(
+        auth.currentUser.uid,
+        mentorId,
+        `Interested in mentorship with ${mentorName}!`,
+        new Date()
+      );
+      setRequestedMentors(prev => ({ ...prev, [mentorId]: true }));
+      Alert.alert('Request Sent', `Your request to ${mentorName} has been sent.`);
+    } catch (err) {
+      console.warn('Request failed:', err);
+      Alert.alert('Error', 'Failed to send mentorship request.');
+    }
+  };
 
   const ListHeader = () => (
     <View>
@@ -81,8 +94,7 @@ export default function HomeScreen({ navigation }) {
           placeholderTextColor='#9AA0A6'
           value={searchQuery}
           onChangeText={setSearchQuery}
-/>
-
+        />
       </View>
 
       <FlatList
@@ -102,10 +114,10 @@ export default function HomeScreen({ navigation }) {
               <Ionicons
                 name={item.icon}
                 size={16}
-                color={active ? '#fff' : '#6B7280'}
+                color={active ? '#fff' : MUTED}
                 style={{ marginRight: 6 }}
               />
-              <Text style={[styles.catText, { color: active ? '#fff' : '#6B7280' }]}>
+              <Text style={[styles.catText, { color: active ? '#fff' : MUTED }]}>
                 {item.label}
               </Text>
             </TouchableOpacity>
@@ -121,7 +133,10 @@ export default function HomeScreen({ navigation }) {
         <Text style={styles.promoSub}>
           Find a mentor tailored to your unique career goals with our AI-powered matching.
         </Text>
-        <TouchableOpacity style={styles.promoBtn}>
+        <TouchableOpacity
+          style={styles.promoBtn}
+          onPress={() => navigation.navigate('SmartMatch')}
+        >
           <Text style={styles.promoBtnText}>Get Started Now</Text>
         </TouchableOpacity>
       </View>
@@ -131,32 +146,17 @@ export default function HomeScreen({ navigation }) {
   );
 
   const renderMentor = ({ item }) => {
-  const isRequested = requestedMentors.includes(item.id);
+    const isRequested = requestedMentors[item.id];
 
-  const handleRequest = async () => {
-    try {
-      await sendMentorRequest(
-        auth.currentUser.uid,
-        item.id,
-        `Interested in mentorship with ${item.name}!`
-      );
-      setRequestedMentors(prev => [...prev, item.id]);
-    } catch (err) {
-      console.warn('Request failed:', err);
-    }
+    return (
+      <MentorCard
+        mentor={item}
+        isRequested={isRequested}
+        onRequest={() => handleRequestMentor(item.id, item.name)}
+        onViewProfile={() => navigation.navigate('ProfileDetails', { userId: item.id })}
+      />
+    );
   };
-
-  return (
-    <MentorCard
-      mentor={item}
-      isRequested={requestedMentors.includes(item.id)}
-      onRequest={handleRequest}
-      onViewProfile={() => navigation.navigate('ProfileDetails', { userId: item.id })}
-    />
-
-  );
-};
-
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -175,6 +175,11 @@ export default function HomeScreen({ navigation }) {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 90, paddingHorizontal: 16 }}
         ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+        ListEmptyComponent={
+          <Text style={{ textAlign: 'center', marginTop: 20, color: MUTED }}>
+            No mentors found. Try a different category or search term.
+          </Text>
+        }
       />
     </SafeAreaView>
   );
@@ -189,7 +194,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: BORDER,
   },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: TEXT },
   searchWrap: {
     flexDirection: 'row',
     alignItems: 'center',

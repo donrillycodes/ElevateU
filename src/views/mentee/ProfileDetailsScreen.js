@@ -1,5 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { SafeAreaView, View, Text, StyleSheet, TouchableOpacity, FlatList, Linking, Image, Alert, } from 'react-native';
+import {
+  SafeAreaView,
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  FlatList,
+  Linking,
+  Image,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchProfile } from '../../controllers/ProfileController';
 import { initiateChat } from '../../controllers/ChatController';
@@ -25,7 +36,11 @@ export default function ProfileDetailsScreen({ navigation, route }) {
     const load = async () => {
       try {
         const data = await fetchProfile(userId);
-        setProfile(data);
+        setProfile({
+          ...data,
+          skills: Array.isArray(data.skills) ? data.skills : [],
+          experience: Array.isArray(data.experience) ? data.experience : [],
+        });
       } catch (err) {
         Alert.alert('Error', 'Failed to load profile.');
       } finally {
@@ -107,7 +122,7 @@ export default function ProfileDetailsScreen({ navigation, route }) {
           </View>
         ) : null;
       case 'skills':
-        return item.content.length > 0 ? (
+        return Array.isArray(item.content) && item.content.length > 0 ? (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Skills</Text>
             <View style={styles.chipWrap}>
@@ -120,7 +135,7 @@ export default function ProfileDetailsScreen({ navigation, route }) {
           </View>
         ) : null;
       case 'experience':
-        return item.content.length > 0 ? (
+        return Array.isArray(item.content) && item.content.length > 0 ? (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Experience</Text>
             {item.content.map((exp, idx) => (

@@ -31,6 +31,8 @@ export default function LoginScreen({ navigation }) {
         return;
       }
       await handleLogin(email, password);
+      // Redirector will handle the navigation based on user role
+      navigation.replace('Redirector');
       // Navigation handled in AppNavigator
     } catch (err) {
       setError(err.message || 'Login failed.');
