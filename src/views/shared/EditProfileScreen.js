@@ -1,17 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  SafeAreaView,
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  TextInput,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Alert,
-  Image,
-} from 'react-native';
+import { SafeAreaView, View, Text, StyleSheet, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, ScrollView, Alert, Image, StatusBar, } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
@@ -38,6 +26,8 @@ export default function EditProfileScreen({ navigation }) {
   const [avatarUri, setAvatarUri] = useState('');
   const [originalAvatar, setOriginalAvatar] = useState('');
   const [error, setError] = useState('');
+  const [title, setTitle] = useState('');
+
 
   useEffect(() => {
     const load = async () => {
@@ -52,6 +42,8 @@ export default function EditProfileScreen({ navigation }) {
         setGender(data.gender || '');
         setAvatarUri(data.avatarUrl || '');
         setOriginalAvatar(data.avatarUrl || '');
+        setTitle(data.title || '');
+
       } catch (err) {
         console.warn('Failed to load profile:', err);
       }
@@ -92,6 +84,7 @@ export default function EditProfileScreen({ navigation }) {
         bio,
         skills: skills.split(',').map(s => s.trim()).filter(s => s),
         gender,
+        title,
       };
       await saveProfile(auth.currentUser.uid, updates);
       if (avatarUri && avatarUri !== originalAvatar) {
@@ -105,7 +98,13 @@ export default function EditProfileScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView
+          style={{
+            flex: 1,
+            backgroundColor: "#fff",
+            paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+          }}
+        >
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name='chevron-back' size={26} color={TEXT} />
@@ -136,6 +135,14 @@ export default function EditProfileScreen({ navigation }) {
           </View>
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
+
+          <Text style={styles.label}>Title</Text>
+          <TextInput
+            style={styles.input}
+            value={title}
+            onChangeText={setTitle}
+            placeholder="e.g. Certified Career Coach"
+          />
 
           <Text style={styles.label}>First Name</Text>
           <TextInput

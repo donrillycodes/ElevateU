@@ -13,7 +13,7 @@ export default function MenteeTabs() {
             tabBarActiveTintColor: '#1A73E8',
             tabBarInactiveTintColor: '#6B7280',
             tabBarStyle: { backgroundColor: '#fff', borderTopColor: '#E5E7EB' },
-            headerShown: true,
+            headerShown: false,
             }}
         >
             <Tab.Screen name="Home" component={HomeScreen} options={{ tabBarIcon: ({ color }) => <Ionicons name="home-outline" size={22} color={color} /> }} />

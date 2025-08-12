@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
   SafeAreaView,
   View,
@@ -8,46 +8,74 @@ import {
   FlatList,
   StyleSheet,
   Alert,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db, auth } from '../../services/firebase';
-import { sendMentorRequest } from '../../controllers/MatchController';
-import MentorCard from '../../components/MentorCard';
+  StatusBar,
+  Platform,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  onSnapshot,
+} from "firebase/firestore";
+import { db, auth } from "../../services/firebase";
+import { sendMentorRequest } from "../../controllers/MatchController";
+import MentorCard from "../../components/MentorCard";
 
-const PRIMARY = '#1A73E8';
-const BORDER = '#E5E7EB';
-const PAGE_BG = '#FFFFFF';
-const MUTED = '#6B7280';
-const TEXT = '#0C223A';
+const PRIMARY = "#1A73E8";
+const BORDER = "#E5E7EB";
+const PAGE_BG = "#FFFFFF";
+const MUTED = "#6B7280";
+const TEXT = "#0C223A";
 
 const CATEGORIES = [
-  { id: 'all', label: 'All', icon: 'apps-outline' },
-  { id: 'Product Management', label: 'Product', icon: 'briefcase-outline' },
-  { id: 'Software Engineering', label: 'Tech', icon: 'hardware-chip-outline' },
-  { id: 'Data Science', label: 'Data', icon: 'analytics-outline' },
-  { id: 'UI/UX Design', label: 'Design', icon: 'color-palette-outline' },
-  { id: 'Marketing', label: 'Marketing', icon: 'megaphone-outline' },
-  { id: 'Finance', label: 'Finance', icon: 'cash-outline' },
+  { id: "all", label: "All", icon: "apps-outline" },
+  { id: "Product Management", label: "Product", icon: "briefcase-outline" },
+  { id: "Software Engineering", label: "Tech", icon: "hardware-chip-outline" },
+  { id: "Data Science", label: "Data", icon: "analytics-outline" },
+  { id: "UI/UX Design", label: "Design", icon: "color-palette-outline" },
+  { id: "Marketing", label: "Marketing", icon: "megaphone-outline" },
+  { id: "Finance", label: "Finance", icon: "cash-outline" },
 ];
 
 export default function HomeScreen({ navigation }) {
   const [mentors, setMentors] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeCat, setActiveCat] = useState('all');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeCat, setActiveCat] = useState("all");
   const [requestedMentors, setRequestedMentors] = useState({});
+  const [matchedMentors, setMatchedMentors] = useState({});
+
+  useEffect(() => {
+    const q = query(
+      collection(db, "requests"),
+      where("menteeId", "==", auth.currentUser.uid),
+      where("status", "==", "accepted")
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const map = {};
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        map[data.mentorId] = true;
+      });
+      setMatchedMentors(map);
+    });
+
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     const fetchMentors = async () => {
       try {
-        let q = query(collection(db, 'users'), where('role', '==', 'mentor'));
-        if (activeCat !== 'all') {
-          q = query(q, where('field', '==', activeCat));
+        let q = query(collection(db, "users"), where("role", "==", "mentor"));
+        if (activeCat !== "all") {
+          q = query(q, where("field", "==", activeCat));
         }
         const snapshot = await getDocs(q);
-        setMentors(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        setMentors(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
       } catch (err) {
-        console.warn('Error fetching mentors:', err);
+        console.warn("Error fetching mentors:", err);
       }
     };
     fetchMentors();
@@ -56,16 +84,18 @@ export default function HomeScreen({ navigation }) {
   const handleLogout = async () => {
     try {
       await auth.signOut();
-      resetTo('Login');
+      navigation.replace("Login");
     } catch (err) {
-      console.error('Logout error:', err);
+      console.error("Logout error:", err);
+      Alert.alert("Logout error", err?.message ?? "Failed to log out.");
     }
   };
 
-  const filteredMentors = mentors.filter(m =>
-    (m.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (m.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (m.bio || '').toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredMentors = mentors.filter(
+    (m) =>
+      (m.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (m.title || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (m.bio || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleRequestMentor = async (mentorId, mentorName) => {
@@ -76,22 +106,25 @@ export default function HomeScreen({ navigation }) {
         `Interested in mentorship with ${mentorName}!`,
         new Date()
       );
-      setRequestedMentors(prev => ({ ...prev, [mentorId]: true }));
-      Alert.alert('Request Sent', `Your request to ${mentorName} has been sent.`);
+      setRequestedMentors((prev) => ({ ...prev, [mentorId]: true }));
+      Alert.alert(
+        "Request Sent",
+        `Your request to ${mentorName} has been sent.`
+      );
     } catch (err) {
-      console.warn('Request failed:', err);
-      Alert.alert('Error', 'Failed to send mentorship request.');
+      console.warn("Request failed:", err);
+      Alert.alert("Error", "Failed to send mentorship request.");
     }
   };
 
   const ListHeader = () => (
     <View>
       <View style={styles.searchWrap}>
-        <Ionicons name='search-outline' size={18} color={MUTED} />
+        <Ionicons name="search-outline" size={18} color={MUTED} />
         <TextInput
           style={styles.searchInput}
-          placeholder='Search mentors, skills, or industries...'
-          placeholderTextColor='#9AA0A6'
+          placeholder="Search mentors, skills, or industries..."
+          placeholderTextColor="#9AA0A6"
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
@@ -108,16 +141,21 @@ export default function HomeScreen({ navigation }) {
           const active = item.id === activeCat;
           return (
             <TouchableOpacity
-              style={[styles.catChip, active ? styles.catChipActive : styles.catChipInactive]}
+              style={[
+                styles.catChip,
+                active ? styles.catChipActive : styles.catChipInactive,
+              ]}
               onPress={() => setActiveCat(item.id)}
             >
               <Ionicons
                 name={item.icon}
                 size={16}
-                color={active ? '#fff' : MUTED}
+                color={active ? "#fff" : MUTED}
                 style={{ marginRight: 6 }}
               />
-              <Text style={[styles.catText, { color: active ? '#fff' : MUTED }]}>
+              <Text
+                style={[styles.catText, { color: active ? "#fff" : MUTED }]}
+              >
                 {item.label}
               </Text>
             </TouchableOpacity>
@@ -127,15 +165,16 @@ export default function HomeScreen({ navigation }) {
 
       <View style={styles.promo}>
         <View style={styles.promoIcon}>
-          <Ionicons name='flash-outline' size={18} color='#fff' />
+          <Ionicons name="flash-outline" size={18} color="#fff" />
         </View>
         <Text style={styles.promoTitle}>Match Instantly</Text>
         <Text style={styles.promoSub}>
-          Find a mentor tailored to your unique career goals with our AI-powered matching.
+          Find a mentor tailored to your unique career goals with our AI-powered
+          matching.
         </Text>
         <TouchableOpacity
           style={styles.promoBtn}
-          onPress={() => navigation.navigate('SmartMatch')}
+          onPress={() => navigation.navigate("SmartMatch")}
         >
           <Text style={styles.promoBtnText}>Get Started Now</Text>
         </TouchableOpacity>
@@ -146,23 +185,42 @@ export default function HomeScreen({ navigation }) {
   );
 
   const renderMentor = ({ item }) => {
+    const isMatched = matchedMentors[item.id];
     const isRequested = requestedMentors[item.id];
 
     return (
       <MentorCard
         mentor={item}
         isRequested={isRequested}
+        isMatched={isMatched}
         onRequest={() => handleRequestMentor(item.id, item.name)}
-        onViewProfile={() => navigation.navigate('ProfileDetails', { userId: item.id })}
+        onViewProfile={() =>
+          navigation.navigate("ProfileDetails", { userId: item.id })
+        }
+        onChat={() =>
+          navigation.navigate("ChatRoom", {
+            chatId: item.id, // or generate a unique chatId if needed
+            name: item.name,
+          })
+        }
       />
     );
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView
+      style={{
+        flex: 1,
+        backgroundColor: "#fff",
+        paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+      }}
+    >
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Home</Text>
-        <TouchableOpacity onPress={handleLogout} style={{ position: 'absolute', right: 16 }}>
+        <TouchableOpacity
+          onPress={handleLogout}
+          style={{ position: "absolute", right: 16 }}
+        >
           <Ionicons name="log-out-outline" size={22} color={TEXT} />
         </TouchableOpacity>
       </View>
@@ -176,7 +234,7 @@ export default function HomeScreen({ navigation }) {
         contentContainerStyle={{ paddingBottom: 90, paddingHorizontal: 16 }}
         ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
         ListEmptyComponent={
-          <Text style={{ textAlign: 'center', marginTop: 20, color: MUTED }}>
+          <Text style={{ textAlign: "center", marginTop: 20, color: MUTED }}>
             No mentors found. Try a different category or search term.
           </Text>
         }
@@ -189,38 +247,38 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: PAGE_BG },
   header: {
     height: 52,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderBottomWidth: 1,
     borderBottomColor: BORDER,
   },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: TEXT },
+  headerTitle: { fontSize: 18, fontWeight: "700", color: TEXT },
   searchWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderWidth: 1,
     borderColor: BORDER,
     borderRadius: 10,
     paddingHorizontal: 12,
     height: 44,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     marginTop: 12,
   },
   searchInput: { flex: 1, marginLeft: 8 },
   catChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 12,
     height: 36,
     borderRadius: 18,
     borderWidth: 1,
   },
-  catChipInactive: { borderColor: BORDER, backgroundColor: '#fff' },
+  catChipInactive: { borderColor: BORDER, backgroundColor: "#fff" },
   catChipActive: { borderColor: PRIMARY, backgroundColor: PRIMARY },
-  catText: { fontWeight: '700', fontSize: 12 },
+  catText: { fontWeight: "700", fontSize: 12 },
   promo: {
     marginTop: 12,
-    backgroundColor: '#4C1D95',
+    backgroundColor: "#4C1D95",
     borderRadius: 14,
     padding: 16,
   },
@@ -228,26 +286,36 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "rgba(255,255,255,0.25)",
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 8,
   },
-  promoTitle: { color: '#fff', fontWeight: '800', fontSize: 16, marginBottom: 6 },
-  promoSub: { color: '#EDE9FE', fontSize: 13, lineHeight: 18, marginBottom: 12 },
+  promoTitle: {
+    color: "#fff",
+    fontWeight: "800",
+    fontSize: 16,
+    marginBottom: 6,
+  },
+  promoSub: {
+    color: "#EDE9FE",
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 12,
+  },
   promoBtn: {
-    backgroundColor: '#8B5CF6',
+    backgroundColor: "#8B5CF6",
     height: 40,
     borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
-  promoBtnText: { color: '#fff', fontWeight: '800' },
+  promoBtnText: { color: "#fff", fontWeight: "800" },
   sectionTitle: {
     marginTop: 14,
     marginBottom: 8,
     fontSize: 18,
-    fontWeight: '800',
-    color: '#111827',
+    fontWeight: "800",
+    color: "#111827",
   },
 });

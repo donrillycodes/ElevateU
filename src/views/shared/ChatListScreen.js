@@ -1,13 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import {
-  SafeAreaView,
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  FlatList,
-  Image,
-} from 'react-native';
+import { SafeAreaView, View, Text, StyleSheet, Platform, TouchableOpacity, FlatList, Image, StatusBar, } from 'react-native';
 import { listenChats } from '../../controllers/ChatController';
 import { getUser } from '../../services/userService';
 import { auth } from '../../services/firebase';
@@ -134,7 +126,14 @@ export default function ChatListScreen({ navigation }) {
   );
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView
+        style={{
+          flex: 1,
+          backgroundColor: "#fff",
+          paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+        }}
+      >
+      <StatusBar barStyle="dark-content" />
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Chats</Text>
       </View>

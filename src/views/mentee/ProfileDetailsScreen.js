@@ -10,6 +10,8 @@ import {
   Image,
   Alert,
   ActivityIndicator,
+  StatusBar,
+  Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchProfile } from '../../controllers/ProfileController';
@@ -185,7 +187,14 @@ export default function ProfileDetailsScreen({ navigation, route }) {
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView
+          style={{
+            flex: 1,
+            backgroundColor: "#fff",
+            paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+          }}
+        >
+      <StatusBar barStyle="dark-content" />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name='chevron-back' size={26} color='#111827' />

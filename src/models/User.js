@@ -10,4 +10,5 @@ export const mapUser = (data) => ({
   gender: data.gender || '',
   dob: data.dob || '',
   phone: data.phone || '',
+  title: data.title || '',
 });

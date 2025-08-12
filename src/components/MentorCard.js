@@ -1,13 +1,20 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Animated } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useEffect, useRef } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Image, Animated, } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
-const PRIMARY = '#1A73E8';
-const BORDER = '#E5E7EB';
-const TEXT = '#0C223A';
-const MUTED = '#6B7280';
+const PRIMARY = "#1A73E8";
+const BORDER = "#E5E7EB";
+const TEXT = "#0C223A";
+const MUTED = "#6B7280";
 
-export default function MentorCard({ mentor, onRequest, onViewProfile, isRequested }) {
+export default function MentorCard({
+  mentor,
+  onRequest,
+  onViewProfile,
+  onChat,
+  isRequested,
+  isMatched,
+}) {
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
@@ -40,6 +47,26 @@ export default function MentorCard({ mentor, onRequest, onViewProfile, isRequest
     }
   }, [isRequested]);
 
+  useEffect(() => {
+  if (isMatched) {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(scaleAnim, {
+          toValue: 1.1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        ])
+      ).start();
+    }
+  }, [isMatched]);
+
+
   return (
     <TouchableOpacity
       style={styles.card}
@@ -47,23 +74,31 @@ export default function MentorCard({ mentor, onRequest, onViewProfile, isRequest
       onPress={onViewProfile}
     >
       <View style={styles.header}>
-        <Image
-          source={
-            mentor.avatarUrl
-              ? { uri: mentor.avatarUrl }
-              : require('../../assets/Layer1.png')
-          }
-          style={styles.avatar}
-        />
+        <Animated.View style={[ styles.avatarWrap, isMatched && { transform: [{ scale: scaleAnim }] },]}>
+          <Image
+            source={
+              mentor.avatarUrl
+                ? { uri: mentor.avatarUrl }
+                : require("../../assets/Layer1.png")
+            }
+            style={styles.avatar}
+          />
+          {isMatched && (
+            <View style={styles.badge}>
+              <Ionicons name="chatbubble-ellipses" size={14} color="#fff" />
+            </View>
+          )}
+        </Animated.View>
+
         <View style={{ flex: 1 }}>
           <Text style={styles.name} numberOfLines={1}>
-            {mentor.name || 'Unknown'}
+            {mentor.name || "Unknown"}
           </Text>
           <Text style={styles.title} numberOfLines={1}>
-            {mentor.title || 'Mentor'}
+            {mentor.title || "Mentor"}
           </Text>
           <Text style={styles.company} numberOfLines={1}>
-            {mentor.company || 'Unknown'}
+            {mentor.company || "Unknown"}
           </Text>
         </View>
       </View>
@@ -71,49 +106,85 @@ export default function MentorCard({ mentor, onRequest, onViewProfile, isRequest
       <View style={styles.body}>
         <View style={styles.chipWrap}>
           {(mentor.skills || []).slice(0, 3).map((skill, index) => (
-            <View key={index} style={[styles.chip, index < 2 && { marginRight: 8 }]}>
+            <View
+              key={index}
+              style={[styles.chip, index < 2 && { marginRight: 8 }]}
+            >
               <Text style={styles.chipText}>{skill}</Text>
             </View>
           ))}
         </View>
         <Text style={styles.bio} numberOfLines={2}>
-          {mentor.bio || 'No bio available.'}
+          {mentor.bio || "No bio available."}
         </Text>
       </View>
 
       <View style={styles.footer}>
-        <Animated.View style={{ opacity: fadeAnim, transform: [{ scale: scaleAnim }] }}>
-          <TouchableOpacity
-            style={[styles.btn, isRequested && styles.btnDisabled]}
-            onPress={onRequest}
-            disabled={isRequested}
-          >
+        {isMatched ? (
+          <TouchableOpacity style={styles.chatBtn} onPress={onChat}>
             <Ionicons
-              name={isRequested ? 'checkmark-done-outline' : 'person-add-outline'}
+              name="chatbubble-ellipses-outline"
               size={18}
-              color={isRequested ? MUTED : '#fff'}
+              color="#fff"
             />
-            <Text style={[styles.btnText, isRequested && styles.btnTextDisabled]}>
-              {isRequested ? 'Requested' : 'Request'}
-            </Text>
+            <Text style={styles.chatBtnText}>Chat Now</Text>
           </TouchableOpacity>
-        </Animated.View>
+        ) : (
+          <Animated.View
+            style={{ opacity: fadeAnim, transform: [{ scale: scaleAnim }] }}
+          >
+            <TouchableOpacity
+              style={[styles.btn, isRequested && styles.btnDisabled]}
+              onPress={onRequest}
+              disabled={isRequested}
+            >
+              <Ionicons
+                name={
+                  isRequested ? "checkmark-done-outline" : "person-add-outline"
+                }
+                size={18}
+                color={isRequested ? MUTED : "#fff"}
+              />
+              <Text
+                style={[styles.btnText, isRequested && styles.btnTextDisabled]}
+              >
+                {isRequested ? "Requested" : "Request"}
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
+        )}
       </View>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
+  avatarWrap: {
+    position: 'relative',
+    width: 48,
+    height: 48,
+    marginRight: 12,
+  },
+  badge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    backgroundColor: '#10B981',
+    borderRadius: 8,
+    padding: 2,
+    zIndex: 10,
+  },
+
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 12,
     borderWidth: 1,
     borderColor: BORDER,
     padding: 14,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 12,
   },
   avatar: {
@@ -124,7 +195,7 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: "800",
     color: TEXT,
   },
   title: {
@@ -140,20 +211,35 @@ const styles = StyleSheet.create({
   body: {
     marginTop: 4,
   },
+  chatBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#10B981",
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  chatBtnText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 13,
+    marginLeft: 6,
+  },
+
   chipWrap: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: 8,
   },
   chip: {
-    backgroundColor: '#E8F0FE',
+    backgroundColor: "#E8F0FE",
     borderRadius: 16,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
   chipText: {
     fontSize: 12,
-    color: '#1F4DB3',
-    fontWeight: '700',
+    color: "#1F4DB3",
+    fontWeight: "700",
   },
   bio: {
     fontSize: 13,
@@ -162,28 +248,28 @@ const styles = StyleSheet.create({
   },
   footer: {
     marginTop: 12,
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
   },
   btn: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: PRIMARY,
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 12,
   },
   btnText: {
-    color: '#fff',
-    fontWeight: '700',
+    color: "#fff",
+    fontWeight: "700",
     fontSize: 13,
     marginLeft: 6,
   },
   btnDisabled: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: "#F3F4F6",
     borderColor: BORDER,
   },
   btnTextDisabled: {
     color: MUTED,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

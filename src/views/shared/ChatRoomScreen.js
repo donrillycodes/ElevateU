@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { SafeAreaView, View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, KeyboardAvoidingView, Platform, } from 'react-native';
+import { SafeAreaView, View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, KeyboardAvoidingView, Platform, StatusBar} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { listenMessages, sendMessage } from '../../controllers/ChatController';
 import { auth } from '../../services/firebase';
@@ -14,6 +14,16 @@ export default function ChatRoomScreen({ navigation, route }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const listRef = useRef();
+
+  if (!chatId || !name) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ color: 'red', fontWeight: 'bold' }}>
+          ⚠️ Error: Missing chat parameters
+        </Text>
+      </View>
+    );
+  }
 
   useEffect(() => {
     const unsubscribe = listenMessages(chatId, (msgs) => {
@@ -54,7 +64,14 @@ export default function ChatRoomScreen({ navigation, route }) {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView
+          style={{
+            flex: 1,
+            backgroundColor: "#fff",
+            paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+          }}
+        >
+      <StatusBar barStyle="dark-content" />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name='chevron-back' size={26} color={TEXT} />

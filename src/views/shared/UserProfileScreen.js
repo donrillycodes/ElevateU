@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SafeAreaView, View, Text, StyleSheet, TouchableOpacity, FlatList, Image, Alert, } from 'react-native';
+import { SafeAreaView, View, Text, StyleSheet, TouchableOpacity, FlatList, Image, Alert, StatusBar, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchProfile } from '../../controllers/ProfileController';
 import { auth } from '../../services/firebase';
@@ -136,7 +136,14 @@ export default function UserProfileScreen() {
     };
 
     return (
-        <SafeAreaView style={styles.safe}>
+        <SafeAreaView
+            style={{
+            flex: 1,
+            backgroundColor: "#fff",
+            paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+            }}
+        >
+        <StatusBar barStyle="dark-content" />
         <View style={styles.header}>
             <Text style={styles.headerTitle}>Profile</Text>
             <TouchableOpacity onPress={handleLogout} style={{ position: 'absolute', right: 16 }}>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { SafeAreaView, View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, Image } from 'react-native';
+import { SafeAreaView, View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, Image, StatusBar, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
@@ -22,22 +22,22 @@ export default function MentorHomeScreen() {
         let stopRequests = null;
 
         stopAuth = onAuthStateChanged(auth, (u) => {
-        setReady(true);
+            setReady(true);
 
-        // Clean any previous subscription if the user changed/logged out
-        if (stopRequests) {
-            stopRequests();
-            stopRequests = null;
-        }
+            if (stopRequests) {
+                stopRequests();
+                stopRequests = null;
+            }
 
-        if (!u) {
-            setRequests([]);
-            return; // don't try to read u.uid if null
-        }
+            if (!u) {
+                setRequests([]);
+                navigation.replace('Login'); // ✅ Navigate to login when signed out
+                return;
+            }
 
-        // Subscribe only when we have a user
-        stopRequests = subscribeToRequests(u.uid, setRequests);
+            stopRequests = subscribeToRequests(u.uid, setRequests);
         });
+
 
         return () => {
         if (stopAuth) stopAuth();
@@ -178,7 +178,13 @@ export default function MentorHomeScreen() {
     };
 
     return (
-        <SafeAreaView style={styles.safe}>
+        <SafeAreaView
+            style={{
+            flex: 1,
+            backgroundColor: "#fff",
+            paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+            }}
+        >
         <View style={styles.header}>
             <Text style={styles.headerTitle}>Home</Text>
             <TouchableOpacity onPress={handleLogout} style={{ position: 'absolute', right: 16 }}>
