@@ -18,19 +18,51 @@ ElevateU is a mobile application designed to connect mentors and mentees, stream
 
 ## 📱 App Screenshots
 
+## 📱 App Screenshots
+
 ### Onboarding & Authentication
-![Onboarding](./assets/screens/signup.png)
-![Login](./assets/screens/login.png)
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="./assets/screens/signup.png" width="250"/>
+      <br/>Signup
+    </td>
+    <td align="center">
+      <img src="./assets/screens/login.png" width="250"/>
+      <br/>Login
+    </td>
+  </tr>
+</table>
 
 ### Dashboard & Matching
-![Dashboard](./assets/screens/dashboard.png)
-![Mentee Profile](./assets/screens/mentee-profile.png)
-![Mentor Home](./assets/screens/mentor-home.png)
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="./assets/screens/dashboard.png" width="220"/>
+    </td>
+    <td align="center">
+      <img src="./assets/screens/mentee-profile.png" width="220"/>
+    </td>
+    <td align="center">
+      <img src="./assets/screens/mentor-home.png" width="220"/>
+    </td>
+  </tr>
+</table>
 
 ### Chat Screens
-![Chat](./assets/screens/chats.png)
-![Chat List](./assets/screens/chat-list.png)
 
+<table>
+  <tr>
+    <td align="center">
+      <img src="./assets/screens/chats.png" width="250"/>
+    </td>
+    <td align="center">
+      <img src="./assets/screens/chat-list.png" width="250"/>
+    </td>
+  </tr>
+</table>
 
 ---
 
@@ -49,3 +81,8 @@ ElevateU is a mobile application designed to connect mentors and mentees, stream
 
 ## 📂 Project Structure (Example)
 
+
+## 👤 Developer
+
+**Emmanuel Oyenuga**  
+Mobile App Developer – Winnipeg, MB 
