@@ -1,24 +1,7 @@
 import React, { useEffect, useState } from "react";
-import {
-  SafeAreaView,
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  FlatList,
-  StyleSheet,
-  Alert,
-  StatusBar,
-  Platform,
-} from "react-native";
+import { SafeAreaView, View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, StatusBar, Platform, } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  onSnapshot,
-} from "firebase/firestore";
+import { collection, query, where, getDocs, onSnapshot, } from "firebase/firestore";
 import { db, auth } from "../../services/firebase";
 import { sendMentorRequest } from "../../controllers/MatchController";
 import MentorCard from "../../components/MentorCard";
@@ -65,6 +48,7 @@ export default function HomeScreen({ navigation }) {
     return unsubscribe;
   }, []);
 
+  // Fetch requested mentors
   useEffect(() => {
     const fetchMentors = async () => {
       try {
@@ -81,6 +65,7 @@ export default function HomeScreen({ navigation }) {
     fetchMentors();
   }, [activeCat]);
 
+  // Handle logout
   const handleLogout = async () => {
     try {
       await auth.signOut();
@@ -91,6 +76,7 @@ export default function HomeScreen({ navigation }) {
     }
   };
 
+  // Filter mentors based on search query
   const filteredMentors = mentors.filter(
     (m) =>
       (m.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -98,6 +84,7 @@ export default function HomeScreen({ navigation }) {
       (m.bio || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Handle mentor request
   const handleRequestMentor = async (mentorId, mentorName) => {
     try {
       await sendMentorRequest(

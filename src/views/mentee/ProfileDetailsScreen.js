@@ -1,18 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import {
-  SafeAreaView,
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  FlatList,
-  Linking,
-  Image,
-  Alert,
-  ActivityIndicator,
-  StatusBar,
-  Platform
-} from 'react-native';
+import { SafeAreaView, View, Text, StyleSheet, TouchableOpacity, FlatList, Linking, Image, Alert, ActivityIndicator, StatusBar, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchProfile } from '../../controllers/ProfileController';
 import { initiateChat } from '../../controllers/ChatController';

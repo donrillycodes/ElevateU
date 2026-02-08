@@ -26,19 +26,20 @@ export default function ChatRoomScreen({ navigation, route }) {
   }
 
   useEffect(() => {
-    const unsubscribe = listenMessages(chatId, (msgs) => {
-      const formatted = msgs.map((m) => ({
-        ...m,
-        timestamp: m.timestamp?.toDate?.().toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-        }) || '',
-      }));
-      setMessages(formatted);
-      setTimeout(() => listRef.current?.scrollToOffset({ offset: 0, animated: true }), 50);
-    });
-    return unsubscribe;
-  }, [chatId]);
+  const unsubscribe = listenMessages(chatId, (msgs) => {
+    const formatted = msgs.map((m) => ({
+      ...m,
+      timestamp: m.timestamp?.toDate?.().toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      }) || '',
+    }));
+    setMessages(formatted);
+    setTimeout(() => listRef.current?.scrollToOffset({ offset: 0, animated: true }), 50);
+  });
+  return unsubscribe;
+}, [chatId]);
+
 
   const onSend = () => {
     if (!input.trim()) return;
