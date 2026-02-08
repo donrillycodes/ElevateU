@@ -39,7 +39,7 @@ ElevateU is a mobile application designed to connect mentors and mentees, stream
 | Layer | Technology |
 |-------|------------|
 | Frontend | React Native (Expo or CLI) |
-| State Management | Context API / Redux (if used) |
+| State Management | Context API |
 | Backend | Firebase Firestore |
 | Authentication | Firebase Auth |
 | Storage | Firebase Storage |
