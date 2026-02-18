@@ -18,8 +18,6 @@ ElevateU is a mobile application designed to connect mentors and mentees, stream
 
 ## 📱 App Screenshots
 
-## 📱 App Screenshots
-
 ### Onboarding & Authentication
 
 <table>
